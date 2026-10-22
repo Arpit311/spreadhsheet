@@ -65,8 +65,11 @@ spreadhsheet/
 - Bold / italic / underline, font size, alignment, text and background colour, per cell.
 - Undo / redo of cell edits and of row/column insert and delete, with formula references shifted.
 
-## Browser support
+## Demo
 
+A screen recording of the implemented features is included in the repository root as `Assignment_Arpit_Bhatnagar.mp4`.
+
+## Browser support
 Current Chrome, Firefox, Safari and Edge.
 
 ## Troubleshooting

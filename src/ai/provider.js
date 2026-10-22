@@ -40,14 +40,27 @@ export function createHttpProvider(config = {}) {
     return {
         name: 'http',
         async complete(request) {
-            // TODO (candidate): call the LLM API of your choice with fetch().
-            //   - send request.system as the system prompt, request.history then
-            //     request.user as the conversation turns
-            //   - return { text: <model text>, provider: 'http' }
-            //   - surface network / auth / rate-limit failures as thrown Errors
-            //     with a readable message; the UI must show them, never swallow them
-            void endpoint; void apiKey; void model; void request
-            throw new Error('createHttpProvider is not implemented yet — wire it to the API of your choice (src/ai/provider.js)')
+            if (!endpoint || !model) throw new Error('Provider configuration is incomplete: set VITE_AI_ENDPOINT and VITE_AI_MODEL')
+            const messages = [{ role: 'system', content: request.system }, ...(request.history || []), { role: 'user', content: request.user }]
+            let response
+            try {
+                response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) },
+                    body: JSON.stringify({ model, messages, temperature: 0 }),
+                })
+            } catch (error) {
+                throw new Error(`Provider network error: ${error.message}`)
+            }
+            if (!response.ok) {
+                const detail = (await response.text()).slice(0, 500)
+                const reason = response.status === 401 ? ' authentication' : response.status === 429 ? ' rate limit' : ''
+                throw new Error(`Provider request failed (${response.status}${reason}): ${detail || response.statusText}`)
+            }
+            const payload = await response.json()
+            const text = payload.choices?.[0]?.message?.content ?? payload.output_text
+            if (typeof text !== 'string') throw new Error('Provider returned an unsupported response envelope')
+            return { text, provider: 'http' }
         },
     }
 }
